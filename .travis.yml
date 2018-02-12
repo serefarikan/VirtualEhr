@@ -3,6 +3,7 @@ language: java
 branches:
   only:
     - develop
+    - develop_code4health
 
 before_install:
     #replace references to file repo so that tests won't kill build process in travis build environment
