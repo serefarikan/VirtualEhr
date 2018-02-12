@@ -1,7 +1,6 @@
 package com.ethercis.vehr;
 
 import com.jayway.restassured.response.Response;
-import cucumber.api.PendingException;
 import cucumber.api.java.After;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Then;
@@ -15,49 +14,38 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import java.io.ByteArrayInputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
+import static com.ethercis.vehr.RestAPIBackgroundSteps.COMPOSITION_ENDPOINT;
+import static com.ethercis.vehr.RestAPIBackgroundSteps.TEST_DATA_DIR;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class CompositionAPISteps {
 
-    private static final String COMPOSITION_ENDPOINT = "/rest/v1/composition";
     private static final String FORMAT_RAW = "RAW";
     private static final String FORMAT_XML = "XML";
-    private final RestAPIBackgroundSteps bground;
+    private final RestAPIBackgroundSteps bg;
     private String body;
     private String compositionUid;
 
     public CompositionAPISteps(RestAPIBackgroundSteps pBackgroundSteps){
-        bground = pBackgroundSteps;
+        bg = pBackgroundSteps;
     }
 
     @When("^Flat json file ([a-zA-Z \\-\\.0-9]+\\.json) with template id ([a-zA-Z \\-\\.0-9]+) is committed to service$")
-    public void flatJsonFileIsCommittedToService(String pTemplateFileName, String pTemplateId) throws Exception {
-        Path jsonFilePath =
-            Paths
-                .get(bground.resourcesRootPath + "test_data/" + pTemplateFileName);
-        byte[] fileContents = Files.readAllBytes(jsonFilePath);
-
-        Response commitCompositionResponse =
-            given()
-                .header(bground.secretSessionId, bground.SESSION_ID_TEST_SESSION)
-                .header(bground.CONTENT_TYPE, bground.CONTENT_TYPE_JSON)
-            .content(fileContents)
-            .when()
-                .post(COMPOSITION_ENDPOINT + "?format=FLAT&templateId=" + pTemplateId)
-            .then().statusCode(200).extract().response();
-
-        compositionUid = commitCompositionResponse.body().jsonPath().getString("compositionUid");
+    public void flatJsonFileIsCommittedToService(String pCompositionFileName, String pTemplateId) throws Exception {
+        compositionUid =
+            bg.postFlatJsonComposition(
+                bg.resourcesRootPath + TEST_DATA_DIR + "/" + pCompositionFileName,
+                pTemplateId);
+        assertNotNull(compositionUid);
+        bg.assertUidFormat(compositionUid);
     }
 
     @After
     public void cleanUp() throws Exception {
-        bground.launcher.stop();
+        bg.launcher.stop();
     }
 
     @Then("^A composition id should be returned by the API$")
@@ -69,7 +57,7 @@ public class CompositionAPISteps {
     public void compositionIdShouldAllowRetrievalOfCompositionInRawFormat() throws Throwable {
         String objectId = compositionUid.substring(0, compositionUid.indexOf("::"));
 
-        Response response = getComposition(objectId, bground.CONTENT_TYPE_JSON, FORMAT_RAW);
+        Response response = getComposition(objectId, bg.CONTENT_TYPE_JSON, FORMAT_RAW);
 
         Object composition = response.body().jsonPath().getJsonObject("composition");
         assertNotNull(composition);
@@ -77,8 +65,8 @@ public class CompositionAPISteps {
 
     private Response getComposition(String objectId, String pContentType, String pFormat) {
         return given()
-                .header(bground.secretSessionId, bground.SESSION_ID_TEST_SESSION)
-                .header(bground.ACCEPT, pContentType)
+                .header(bg.secretSessionId, bg.SESSION_ID_TEST_SESSION)
+                .header(bg.ACCEPT, pContentType)
                 .when()
                     .get(COMPOSITION_ENDPOINT + "/" + objectId + "?format=" + pFormat)
                 .then()
@@ -91,7 +79,7 @@ public class CompositionAPISteps {
     public void compositionIdShouldAllowRetrievalOfCompositionInXmlFormat() throws Throwable {
         String objectId = compositionUid.substring(0, compositionUid.indexOf("::"));
 
-        Response response = getComposition(objectId, bground.CONTENT_TYPE_XML, FORMAT_XML);
+        Response response = getComposition(objectId, bg.CONTENT_TYPE_XML, FORMAT_XML);
 
         String composition = response.body().asString();
         assertNotNull(composition);

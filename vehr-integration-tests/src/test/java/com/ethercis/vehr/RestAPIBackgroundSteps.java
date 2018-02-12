@@ -3,21 +3,31 @@ package com.ethercis.vehr;
 import com.ethercis.logonservice.session.I_SessionManager;
 import com.ethercis.servicemanager.runlevel.I_ServiceRunMode;
 import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.path.xml.XmlPath;
 import com.jayway.restassured.response.Response;
+import cucumber.api.DataTable;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
+import gherkin.formatter.model.DataTableRow;
 import org.junit.Assert;
 
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class RestAPIBackgroundSteps {
+    public static final int STATUS_CODE_OK = 200;
     protected final String USER_ID_GUEST = "guest";
     protected final String PASSWORD_GUEST = "guest";
     protected final String SESSION_ID_TEST_SESSION = "TEST-SESSION";
@@ -34,6 +44,13 @@ public class RestAPIBackgroundSteps {
     protected String resourcesRootPath;
     protected String secretSessionId;
     protected UUID ehrId;
+    private String DEFAULT_OPT_DIR = "knowledge/operational_templates";
+
+    public static final String TEST_DATA_DIR = "test_data";
+    public static final String CODE4HEALTH_TEST_DATA_DIR = TEST_DATA_DIR + "/code4health";
+    public static final String CODE4HEALTH_OPT_DIR = CODE4HEALTH_TEST_DATA_DIR + "/opt";
+    public static final String COMPOSITION_ENDPOINT = "/rest/v1/composition";
+    private Pattern uidPattern;
 
     public RestAPIBackgroundSteps(){
         RestAssured.baseURI = "http://localhost";
@@ -43,6 +60,8 @@ public class RestAPIBackgroundSteps {
         secretSessionId =
             I_SessionManager
                 .SECRET_SESSION_ID(I_ServiceRunMode.DialectSpace.EHRSCAPE);
+
+        uidPattern = Pattern.compile("[a-z0-9-]*::[a-z0-9.]*::[0-9]*");
     }
 
     @Given("^The server is running$")
@@ -56,6 +75,8 @@ public class RestAPIBackgroundSteps {
             getClass()
                 .getClassLoader()
                 .getResource(".")
+                .toURI()//to deal with space in directory name
+                .toURL()
                 .getFile();
 
         launcher = new Launcher();
@@ -87,18 +108,25 @@ public class RestAPIBackgroundSteps {
 
     @And("^The openEHR template ([a-zA-Z \\-\\.0-9]+\\.opt) for the composition is available to the server$")
     public void theOpenEHRTemplateForTheCompositionIsAvailableToTheServer(String optFileName) throws Throwable {
+        postTemplateToServer(DEFAULT_OPT_DIR, optFileName);
+    }
 
-        String optPath = resourcesRootPath + "knowledge/operational_templates/" + optFileName;
-        byte[] content = Files.readAllBytes(Paths.get(optPath));
+    public void postTemplateToServer(String operationalTemplatesDir, String optFileName) {
+        try {
+            String optPath = resourcesRootPath + operationalTemplatesDir + "/" + optFileName;
+            byte[] content = Files.readAllBytes(Paths.get(optPath));
 
-        Response response =
-            given()
-                .header(secretSessionId, SESSION_ID_TEST_SESSION)
-                .content(content)
-                .when()
-                .post("/rest/v1/template");
+            Response response =
+                given()
+                    .header(secretSessionId, SESSION_ID_TEST_SESSION)
+                    .content(content)
+                    .when()
+                    .post("/rest/v1/template");
 
-        assertEquals(response.statusCode(), 200);
+            assertEquals(response.statusCode(), 200);
+        }catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
     @And("^An EHR is created$")
@@ -115,5 +143,89 @@ public class RestAPIBackgroundSteps {
         Map<String,String> responseContents = response.getBody().jsonPath().get("$");
         ehrId = UUID.fromString(responseContents.get("ehrId"));
         assertNotNull(ehrId);
+    }
+
+    @And("^The following compositions exists under the EHR:$")
+//    public void theFollowingCompositionsExistsUnderTheEHR(List<Map<String,String>> pCompositionFileNames) throws Throwable {
+    public void theFollowingCompositionsExistsUnderTheEHR(DataTable pCompositionFileNames) throws Throwable {
+        List<DataTableRow> gherkinRows = pCompositionFileNames.getGherkinRows();
+        for (DataTableRow fnameTempId : gherkinRows) {
+            String compFileName = fnameTempId.getCells().get(0);
+            String templateId = fnameTempId.getCells().get(1);
+            postFlatJsonComposition(resourcesRootPath + CODE4HEALTH_TEST_DATA_DIR + "/" + compFileName,
+                                templateId);
+        }
+    }
+
+    public void postXMLComposition(boolean pPassEhrId, String pCompositionPath, CompositionFormat pFormat) {
+        try{
+            byte[] xmlContent =
+                Files
+                    .readAllBytes(
+                        Paths.get(pCompositionPath));
+
+            Response response =
+                given()
+                    .header(secretSessionId, SESSION_ID_TEST_SESSION)
+                    .header(CONTENT_TYPE, CONTENT_TYPE_XML)
+                    .content(xmlContent)
+                    .when()
+                    .post("/rest/v1/composition?format="+pFormat
+                        + (pPassEhrId
+                        ? "&ehrId=" + ehrId
+                        : ""));
+            assertNotNull(response);
+
+            String xml = response.getBody().asString();
+            String uid =
+                XmlPath
+                    .from(xml)
+                    .getString(COMPOSITION_UID_PATH_IN_XML);
+            assertNotNull(uid);
+
+            assertUidFormat(uid);
+        }catch(IOException e){
+            throw new RuntimeException("could not commit composition to server", e);
+        }
+    }
+
+    public void assertUidFormat(String uid) {
+        Matcher uidMatcher = uidPattern.matcher(uid);
+        assertTrue(uidMatcher.matches());
+    }
+
+    public String postFlatJsonComposition(String pCompositionFilePath, String pTemplateId) throws IOException {
+        Path jsonFilePath =
+            Paths
+                .get(pCompositionFilePath);
+        byte[] fileContents = Files.readAllBytes(jsonFilePath);
+
+        Response commitCompositionResponse =
+            given()
+                .header(secretSessionId, SESSION_ID_TEST_SESSION)
+                .header(CONTENT_TYPE, CONTENT_TYPE_JSON)
+                .content(fileContents)
+                .when()
+                .post(COMPOSITION_ENDPOINT + "?format=FLAT&templateId=" + pTemplateId)
+                .then()
+                .extract()
+                .response();
+        int statusCode = commitCompositionResponse.statusCode();
+        assertEquals(statusCode,200);
+
+        return commitCompositionResponse.body().jsonPath().getString("compositionUid");
+    }
+
+    public List<Map<String, String>> extractAqlResults(Response response) {
+        return response
+            .getBody()
+            .jsonPath().getList("resultSet");
+    }
+
+    public Response getAqlResponse(String query) {
+        return given()
+            .header(secretSessionId, SESSION_ID_TEST_SESSION)
+            .param("aql", query)
+            .get("/rest/v1/query");
     }
 }

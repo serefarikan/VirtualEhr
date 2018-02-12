@@ -1,0 +1,16 @@
+{
+    "ctx/language": "en",
+    "ctx/territory": "GB",
+    "ctx/composer_name": "Nurse Crachett",
+    "ctx/time": "2011-11-09",
+    "ctx/id_namespace": "Hospital",
+    "ctx/id_scheme": "HOSPITAL-NS",
+    "ctx/health_care_facility|name": "Marandia DGH",
+    "ctx/health_care_facility|id": "9095",
+    "smart_growth_report/body_weight/weight|magnitude": 11.9,
+    "smart_growth_report/body_weight/weight|unit": "kg",
+    "smart_growth_report/height_length/any_event:0/height_length|magnitude": 86.3,
+    "smart_growth_report/height_length/any_event:0/height_length|unit": "cm",
+    "smart_growth_report/head_circumference/any_event:0/head_circumference|magnitude": 52,
+    "smart_growth_report/head_circumference/any_event:0/head_circumference|unit": "cm"
+}
