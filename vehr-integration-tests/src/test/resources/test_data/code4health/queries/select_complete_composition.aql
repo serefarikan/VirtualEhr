@@ -2,6 +2,6 @@ SELECT
 	a
  FROM
  	EHR e [ehr_id/value = '{{ehrId}}']
- 		CONTAINS COMPOSITION a[openEHR-EHR-COMPOSITION.medication_list.v0]
+ 		CONTAINS COMPOSITION a[{{compositionArchetypeIdId}}]
 WHERE
-	a/name/value='Medication statement list'
+	a/name/value='{{compositionName}}'

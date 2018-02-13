@@ -13,8 +13,8 @@ SELECT
  FROM
  	EHR e [ehr_id/value = '{{ehrId}}']
 
- 		CONTAINS COMPOSITION a[openEHR-EHR-COMPOSITION.medication_list.v0]
+ 		CONTAINS COMPOSITION a[{{compositionArchetypeIdId}}]
 
- 			CONTAINS INSTRUCTION b_a[openEHR-EHR-INSTRUCTION.medication_order.v1]
+ 			CONTAINS INSTRUCTION b_a[{{instructionArchetypeId}}]
 WHERE
-	a/name/value='Medication statement list'
+	a/name/value='{{compositionName}}'

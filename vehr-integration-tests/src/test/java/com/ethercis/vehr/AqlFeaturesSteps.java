@@ -25,14 +25,14 @@ import static com.ethercis.vehr.RestAPIBackgroundSteps.STATUS_CODE_OK;
 import static org.junit.Assert.*;
 
 public class AqlFeaturesSteps {
-    private static String ARCHETYPE_NODE_ID_AND_NAME_PATTERN = "\\[at\\d{4} *, *\\'[\\w\\s]*\\'\\]";
-    private static String SELECT_COMPLETE_COMPOSITION_AQL = "select_complete_composition.aql";
+    private final String ARCHETYPE_NODE_ID_AND_NAME_PATTERN = "\\[at\\d{4} *, *\\'[\\w\\s]*\\'\\]";
+    private final String SELECT_COMPLETE_COMPOSITION_AQL = "select_complete_composition.aql";
     private final String SELECT_DATA_ITEM_NODE_ID_NAME_AQL = "select_data_item_node_id_and_name.aql";
     private final String EHR_COMPOSITION_INSTRUCTION_AQL = "ehr-composition-instruction.aql";
     private final String EHR_ID_PLACEHOLDER = "{{ehrId}}";
     private final String COMPOSITION_ARCH_ID_PLACEHOLDER = "{{compositionArchetypeIdId}}";
-    private final String MEDICATION_LIST_ARCH_ID = "openEHR-EHR-COMPOSITION.medication_list.v0";
-    private final String MEDICATION_ORDER_ARCH_ID = "openEHR-EHR-INSTRUCTION.medication_order.v1";
+    private final String COMPOSITION_ARCH_ID = "openEHR-EHR-COMPOSITION.medication_list.v0";
+    private final String INSTRUCTION_ARCH_ID = "openEHR-EHR-INSTRUCTION.medication_order.v1";
     private final String COMPOSITION_NAME_PLACEHOLDER = "{{compositionName}}";
     private final String COMPOSITION_NAME = "Medication statement list";
     private final String COMPOSITION_INSTRUCTION_ARCH_ID_PLACEHOLDER = "{{instructionArchetypeId}}";
@@ -73,7 +73,7 @@ public class AqlFeaturesSteps {
         _aqlQuery =
             _aqlQuery
                 .replace(COMPOSITION_ARCH_ID_PLACEHOLDER,
-                    MEDICATION_LIST_ARCH_ID);
+                    COMPOSITION_ARCH_ID);
     }
 
     @And("^Composition name criteria using WHERE clause$")
@@ -86,7 +86,7 @@ public class AqlFeaturesSteps {
         _aqlQuery =
             _aqlQuery
                 .replace(COMPOSITION_INSTRUCTION_ARCH_ID_PLACEHOLDER,
-                    MEDICATION_ORDER_ARCH_ID);
+                    INSTRUCTION_ARCH_ID);
     }
 
     @Then("^The following data items should be available in query results:$")
