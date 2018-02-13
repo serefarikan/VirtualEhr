@@ -1,7 +1,9 @@
 package com.ethercis.vehr;
 
+import com.jayway.restassured.path.json.JsonPath;
 import com.jayway.restassured.response.Response;
 import cucumber.api.DataTable;
+import cucumber.api.PendingException;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
@@ -25,6 +27,7 @@ import static com.ethercis.vehr.RestAPIBackgroundSteps.STATUS_CODE_OK;
 import static org.junit.Assert.*;
 
 public class AqlFeaturesSteps {
+    private final String SELECT_COMPLETE_INSTRUCTION_AQL = "select_complete_instruction.aql";
     private final String ARCHETYPE_NODE_ID_AND_NAME_PATTERN = "\\[at\\d{4} *, *\\'[\\w\\s]*\\'\\]";
     private final String SELECT_COMPLETE_COMPOSITION_AQL = "select_complete_composition.aql";
     private final String SELECT_DATA_ITEM_NODE_ID_NAME_AQL = "select_data_item_node_id_and_name.aql";
@@ -175,19 +178,43 @@ public class AqlFeaturesSteps {
     public void aAnAQLQueryThatDescribesAnCompositionUnderAnEHRIsCreated() throws Throwable {
         String fullFilepath = bg.resourcesRootPath + CODE4HEALTH_QUERY_DIR + SELECT_COMPLETE_COMPOSITION_AQL;
         _aqlQuery = readFile(fullFilepath);
-        //set ehr id
-        theQueryContainsEHRIdCriteria();
     }
 
     @Then("^The results should be composition instances$")
     public void theResultsShouldBeCompositionInstances() throws Throwable {
         _aqlResultSet = bg.extractAqlResults(bg.getAqlResponse(_aqlQuery));
         assertTrue(_aqlResultSet.size() > 0);
+
+        _aqlResultSet.forEach(
+            map -> assertArchetypeNodeId(map, "composition", COMPOSITION_ARCH_ID));
     }
 
     private String readFile(String fullFilePath) throws FileNotFoundException {
         return new Scanner(new FileInputStream(fullFilePath))
             .useDelimiter("\\A")
             .next();
+    }
+
+    @Then("^The results should be instruction instances$")
+    public void theResultsShouldBeInstructionInstances() throws Throwable {
+        _aqlResultSet = bg.extractAqlResults(bg.getAqlResponse(_aqlQuery));
+        assertTrue(_aqlResultSet.size() > 0);
+
+        _aqlResultSet.forEach(
+            map -> assertArchetypeNodeId(map, "instruction", INSTRUCTION_ARCH_ID));
+    }
+
+    private void assertArchetypeNodeId(Map<String,String> map,
+                                       String nodeAliasInAqlSelectClause,
+                                       String archetypeNodeId){
+        String instructionJson = map.get(nodeAliasInAqlSelectClause);
+        JsonPath path = new JsonPath(instructionJson);
+        String node_id = path.getString("archetype_node_id");
+        assertEquals(node_id, archetypeNodeId);
+    }
+
+    @When("^A an AQL query that describes an instruction under an EHR is created$")
+    public void aAnAQLQueryThatDescribesAnInstructionUnderAnEHRIsCreated() throws Throwable {
+        _aqlQuery = readFile(bg.resourcesRootPath + CODE4HEALTH_QUERY_DIR + SELECT_COMPLETE_INSTRUCTION_AQL);
     }
 }

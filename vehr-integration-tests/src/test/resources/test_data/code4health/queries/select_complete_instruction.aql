@@ -1,7 +1,10 @@
 SELECT
-	a composition
+	b_a as instruction
  FROM
  	EHR e [ehr_id/value = '{{ehrId}}']
+
  		CONTAINS COMPOSITION a[{{compositionArchetypeIdId}}]
+
+ 			CONTAINS INSTRUCTION b_a[{{instructionArchetypeId}}]
 WHERE
 	a/name/value='{{compositionName}}'
