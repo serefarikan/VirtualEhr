@@ -1,0 +1,12 @@
+SELECT
+	a/uid/value as uid,
+	b_a/activities[at0001]/description[at0002]/items[at0173, 'Dose amount description']/value/value as dose_amount,
+	b_a/activities[at0001]/description[at0002]/items[at0173, 'Dose timing description']/value/value as dose_timing
+ FROM
+ 	EHR e [ehr_id/value = '{{ehrId}}']
+
+ 		CONTAINS COMPOSITION a[openEHR-EHR-COMPOSITION.medication_list.v0]
+
+ 			CONTAINS INSTRUCTION b_a[openEHR-EHR-INSTRUCTION.medication_order.v1]
+WHERE
+	a/name/value='Medication statement list'

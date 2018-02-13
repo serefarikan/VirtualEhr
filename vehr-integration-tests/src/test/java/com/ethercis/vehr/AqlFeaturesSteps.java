@@ -7,25 +7,26 @@ import cucumber.api.java.en.And;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import gherkin.formatter.model.DataTableRow;
-import org.junit.Assert;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.ethercis.vehr.RestAPIBackgroundSteps.CODE4HEALTH_OPT_DIR;
 import static com.ethercis.vehr.RestAPIBackgroundSteps.CODE4HEALTH_TEST_DATA_DIR;
 import static com.ethercis.vehr.RestAPIBackgroundSteps.STATUS_CODE_OK;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class AqlFeaturesSteps {
-
+    private static final String ARCHETYPE_NODE_ID_AND_NAME_PATTERN = "\\[at\\d{4} *, *\\'[\\w\\s]*\\'\\]";
+    private final String SELECT_DATA_ITEM_NODE_ID_NAME_AQL = "select_data_item_node_id_and_name.aql";
     private final String EHR_COMPOSITION_INSTRUCTION_AQL = "ehr-composition-instruction.aql";
     private final String EHR_ID_PLACEHOLDER = "{{ehrId}}";
     private final String COMPOSITION_ARCH_ID_PLACEHOLDER = "{{compositionArchetypeIdId}}";
@@ -37,9 +38,10 @@ public class AqlFeaturesSteps {
     private final RestAPIBackgroundSteps bg;
     private final String CODE4HEALTH_QUERY_DIR = CODE4HEALTH_TEST_DATA_DIR + "/queries/";
 
-    private String queryText;
+    private String _aqlQuery;
 
     private List<String> _code4HealthTemplateIds;
+    private List<Map<String, String>> _aqlResultSet;
 
     public AqlFeaturesSteps(RestAPIBackgroundSteps backgroundSteps) {
         bg = backgroundSteps;
@@ -52,7 +54,7 @@ public class AqlFeaturesSteps {
                 CODE4HEALTH_QUERY_DIR +
                 EHR_COMPOSITION_INSTRUCTION_AQL;
 
-        queryText =
+        _aqlQuery =
             new Scanner(
                 new ByteArrayInputStream(
                     Files.readAllBytes(Paths.get(queryFile))))
@@ -62,37 +64,37 @@ public class AqlFeaturesSteps {
 
     @And("^The query contains EHR id criteria$")
     public void theQueryContainsEHRIdCriteria() throws Throwable {
-        queryText = queryText.replace(EHR_ID_PLACEHOLDER, bg.ehrId.toString());
+        _aqlQuery = _aqlQuery.replace(EHR_ID_PLACEHOLDER, bg.ehrId.toString());
     }
 
     @And("^Composition archetype id criteria$")
     public void compositionArchetypeIdCriteria() throws Throwable {
-        queryText =
-            queryText
+        _aqlQuery =
+            _aqlQuery
                 .replace(COMPOSITION_ARCH_ID_PLACEHOLDER,
                     MEDICATION_LIST_ARCH_ID);
     }
 
     @And("^Composition name criteria using WHERE clause$")
     public void compositionNameCriteriaUsingWHEREClause() throws Throwable {
-        queryText = queryText.replace(COMPOSITION_NAME_PLACEHOLDER, COMPOSITION_NAME);
+        _aqlQuery = _aqlQuery.replace(COMPOSITION_NAME_PLACEHOLDER, COMPOSITION_NAME);
     }
 
     @And("^Instruction archetype id criteria$")
     public void instructionArchetypeIdCriteria() throws Throwable {
-        queryText =
-            queryText
+        _aqlQuery =
+            _aqlQuery
                 .replace(COMPOSITION_INSTRUCTION_ARCH_ID_PLACEHOLDER,
                     MEDICATION_ORDER_ARCH_ID);
     }
 
     @Then("^The following data items should be available in query results:$")
     public void theFollowingDataItemsShouldBeAvailableInQueryResults(DataTable dataItems) throws Throwable {
-        Response aqlResponse = bg.getAqlResponse(queryText);
+        Response aqlResponse = bg.getAqlResponse(_aqlQuery);
         assertEquals(aqlResponse.statusCode(), STATUS_CODE_OK);
 
-        List<Map<String, String>> aqlResultSet = bg.extractAqlResults(aqlResponse);
-        aqlResultSet
+        _aqlResultSet = bg.extractAqlResults(aqlResponse);
+        _aqlResultSet
             .forEach(resultRow ->
                 dataItems
                     .getGherkinRows()
@@ -108,6 +110,10 @@ public class AqlFeaturesSteps {
 
     private void scanRowForExpectedDataItems(Map<String, String> resultRow, DataTableRow gherkinRow) {
         String dataItem = gherkinRow.getCells().get(0);
+        assertExpectedDataItem(resultRow, dataItem);
+    }
+
+    private void assertExpectedDataItem(Map<String, String> resultRow, String dataItem) {
         switch (dataItem) {
             case "composition_uid":
                 String uid = resultRow.get("uid");
@@ -135,5 +141,37 @@ public class AqlFeaturesSteps {
                 break;
                 default: throw new RuntimeException("This data item is not mapped to any columns: " + dataItem);
         }
+    }
+
+    @When("^An AQL query that selects composition uids and data items is created$")
+    public void anAQLQueryThatSelectsCompositionUidsAndDataItemsIsCreated() throws Throwable {
+        _aqlQuery =
+            new Scanner(new FileInputStream(
+                bg.resourcesRootPath +
+                    CODE4HEALTH_QUERY_DIR +
+                    SELECT_DATA_ITEM_NODE_ID_NAME_AQL))
+            .useDelimiter("\\A")
+            .next();
+        //set variables so that the query would work
+        theQueryContainsEHRIdCriteria();
+        compositionArchetypeIdCriteria();
+        compositionNameCriteriaUsingWHEREClause();
+        instructionArchetypeIdCriteria();
+    }
+
+    @And("^The data items are selected based on both archetype node id and name$")
+    public void theDataItemsAreSelectedBasedOnBothArchetypeNodeIdAndName() throws Throwable {
+        Pattern nodeCriteriaPattern = Pattern.compile(ARCHETYPE_NODE_ID_AND_NAME_PATTERN);
+        Matcher matcher = nodeCriteriaPattern.matcher(_aqlQuery);
+        //look for two nodes with nodeId+name pattern, hence two matches
+        assertTrue(matcher.find() && matcher.find());
+
+        _aqlResultSet = bg.extractAqlResults(bg.getAqlResponse(_aqlQuery));
+    }
+
+    @Then("^Data items with same node id should have different values if they have different names$")
+    public void dataItemsWithSameNodeIdShouldHaveDifferentValuesIfTheyHaveDifferentNames() throws Throwable {
+        _aqlResultSet.forEach(
+            map -> assertNotEquals(map.get("dose_amount"), map.get("dose_timing")));
     }
 }

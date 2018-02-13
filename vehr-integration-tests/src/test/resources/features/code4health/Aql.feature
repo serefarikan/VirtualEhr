@@ -84,7 +84,7 @@ Feature: Support for openEHR Archetype Query Language
 #      |Composition_SMART_Growth_Chart.v0.2.json|Smart Growth Chart Data.v0|
 #      |Composition_SMART_Growth_Chart.v0.3.json|Smart Growth Chart Data.v0|
 
-  Scenario: Composition contains instruction
+  Scenario: Select composition and instruction data when Composition contains instruction
     A composition which contains an instruction is queried. The composition sits under the EHR.
     AQL query specifies EHR id, Composition archetype node id and instruction archetype node id.
     The query uses WHERE clause to add Composition name as an extra criteria. The returned data
@@ -100,3 +100,11 @@ Feature: Support for openEHR Archetype Query Language
       | composition_composer |
       | context_start_time |
       | activity_data |
+
+  Scenario: Select data item using its archetype node id and name
+    Query compositions which contain data items that can can only be distinguished by their names.
+    The query uses [atXXXX,'data item name'] syntax in SELECT clause to select specific data items.
+
+    When An AQL query that selects composition uids and data items is created
+    And The data items are selected based on both archetype node id and name
+    Then Data items with same node id should have different values if they have different names

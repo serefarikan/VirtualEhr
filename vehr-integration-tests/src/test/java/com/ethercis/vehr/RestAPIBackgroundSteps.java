@@ -15,9 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,6 +49,7 @@ public class RestAPIBackgroundSteps {
     public static final String CODE4HEALTH_OPT_DIR = CODE4HEALTH_TEST_DATA_DIR + "/opt";
     public static final String COMPOSITION_ENDPOINT = "/rest/v1/composition";
     private Pattern uidPattern;
+    private Map<String, List<String>> persistedCompositions = new HashMap<>();
 
     public RestAPIBackgroundSteps(){
         RestAssured.baseURI = "http://localhost";
@@ -146,14 +145,20 @@ public class RestAPIBackgroundSteps {
     }
 
     @And("^The following compositions exists under the EHR:$")
-//    public void theFollowingCompositionsExistsUnderTheEHR(List<Map<String,String>> pCompositionFileNames) throws Throwable {
     public void theFollowingCompositionsExistsUnderTheEHR(DataTable pCompositionFileNames) throws Throwable {
         List<DataTableRow> gherkinRows = pCompositionFileNames.getGherkinRows();
         for (DataTableRow fnameTempId : gherkinRows) {
+
             String compFileName = fnameTempId.getCells().get(0);
+            String compFilePath = resourcesRootPath + CODE4HEALTH_TEST_DATA_DIR + "/" + compFileName;
+
             String templateId = fnameTempId.getCells().get(1);
-            postFlatJsonComposition(resourcesRootPath + CODE4HEALTH_TEST_DATA_DIR + "/" + compFileName,
-                                templateId);
+
+            String compositionUid = postFlatJsonComposition(compFilePath, templateId);
+
+            persistedCompositions
+                .computeIfAbsent(templateId, x -> new ArrayList<>())//x is ignored
+                .add(compositionUid);
         }
     }
 

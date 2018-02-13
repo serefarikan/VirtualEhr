@@ -16,6 +16,7 @@ import javax.xml.xpath.XPathFactory;
 import java.io.ByteArrayInputStream;
 
 import static com.ethercis.vehr.RestAPIBackgroundSteps.COMPOSITION_ENDPOINT;
+import static com.ethercis.vehr.RestAPIBackgroundSteps.STATUS_CODE_OK;
 import static com.ethercis.vehr.RestAPIBackgroundSteps.TEST_DATA_DIR;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertNotNull;
@@ -64,15 +65,18 @@ public class CompositionAPISteps {
     }
 
     private Response getComposition(String objectId, String pContentType, String pFormat) {
-        return given()
+        Response response =
+            given()
                 .header(bg.secretSessionId, bg.SESSION_ID_TEST_SESSION)
                 .header(bg.ACCEPT, pContentType)
-                .when()
-                    .get(COMPOSITION_ENDPOINT + "/" + objectId + "?format=" + pFormat)
-                .then()
-                    .statusCode(200)
-                    .extract()
-                    .response();
+            .when()
+                .get(COMPOSITION_ENDPOINT + "/" + objectId + "?format=" + pFormat)
+            .then()
+            .extract()
+            .response();
+
+        assertTrue(response.statusCode() == STATUS_CODE_OK);
+        return response;
     }
 
     @And("^Composition id should allow retrieval of composition in xml format$")
