@@ -2,7 +2,6 @@ package com.ethercis.vehr;
 
 import com.jayway.restassured.response.Response;
 import cucumber.api.DataTable;
-import cucumber.api.PendingException;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
@@ -10,6 +9,7 @@ import gherkin.formatter.model.DataTableRow;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -25,7 +25,8 @@ import static com.ethercis.vehr.RestAPIBackgroundSteps.STATUS_CODE_OK;
 import static org.junit.Assert.*;
 
 public class AqlFeaturesSteps {
-    private static final String ARCHETYPE_NODE_ID_AND_NAME_PATTERN = "\\[at\\d{4} *, *\\'[\\w\\s]*\\'\\]";
+    private static String ARCHETYPE_NODE_ID_AND_NAME_PATTERN = "\\[at\\d{4} *, *\\'[\\w\\s]*\\'\\]";
+    private static String SELECT_COMPLETE_COMPOSITION_AQL = "select_complete_composition.aql";
     private final String SELECT_DATA_ITEM_NODE_ID_NAME_AQL = "select_data_item_node_id_and_name.aql";
     private final String EHR_COMPOSITION_INSTRUCTION_AQL = "ehr-composition-instruction.aql";
     private final String EHR_ID_PLACEHOLDER = "{{ehrId}}";
@@ -145,13 +146,8 @@ public class AqlFeaturesSteps {
 
     @When("^An AQL query that selects composition uids and data items is created$")
     public void anAQLQueryThatSelectsCompositionUidsAndDataItemsIsCreated() throws Throwable {
-        _aqlQuery =
-            new Scanner(new FileInputStream(
-                bg.resourcesRootPath +
-                    CODE4HEALTH_QUERY_DIR +
-                    SELECT_DATA_ITEM_NODE_ID_NAME_AQL))
-            .useDelimiter("\\A")
-            .next();
+        String fullFilepath = bg.resourcesRootPath + CODE4HEALTH_QUERY_DIR + SELECT_DATA_ITEM_NODE_ID_NAME_AQL;
+        _aqlQuery = readFile(fullFilepath);
         //set variables so that the query would work
         theQueryContainsEHRIdCriteria();
         compositionArchetypeIdCriteria();
@@ -173,5 +169,25 @@ public class AqlFeaturesSteps {
     public void dataItemsWithSameNodeIdShouldHaveDifferentValuesIfTheyHaveDifferentNames() throws Throwable {
         _aqlResultSet.forEach(
             map -> assertNotEquals(map.get("dose_amount"), map.get("dose_timing")));
+    }
+
+    @When("^A an AQL query that describes a composition under an EHR is created$")
+    public void aAnAQLQueryThatDescribesAnCompositionUnderAnEHRIsCreated() throws Throwable {
+        String fullFilepath = bg.resourcesRootPath + CODE4HEALTH_QUERY_DIR + SELECT_COMPLETE_COMPOSITION_AQL;
+        _aqlQuery = readFile(fullFilepath);
+        //set ehr id
+        theQueryContainsEHRIdCriteria();
+    }
+
+    @Then("^The results should be composition instances$")
+    public void theResultsShouldBeCompositionInstances() throws Throwable {
+        _aqlResultSet = bg.extractAqlResults(bg.getAqlResponse(_aqlQuery));
+        assertTrue(_aqlResultSet.size() > 0);
+    }
+
+    private String readFile(String fullFilePath) throws FileNotFoundException {
+        return new Scanner(new FileInputStream(fullFilePath))
+            .useDelimiter("\\A")
+            .next();
     }
 }

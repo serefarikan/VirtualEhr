@@ -108,3 +108,15 @@ Feature: Support for openEHR Archetype Query Language
     When An AQL query that selects composition uids and data items is created
     And The data items are selected based on both archetype node id and name
     Then Data items with same node id should have different values if they have different names
+
+  Scenario: Select composition
+    A composition is queried. The composition sits under the EHR.
+    AQL query specifies EHR id, Composition archetype node id and instruction archetype node id.
+    The query uses WHERE clause to add Composition name as an extra criteria. The SELECT clause
+    selects the complete composition instance
+
+    When A an AQL query that describes a composition under an EHR is created
+    And The query contains EHR id criteria
+    And Composition archetype id criteria
+    And Composition name criteria using WHERE clause
+    Then The results should be composition instances
