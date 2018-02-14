@@ -27,17 +27,19 @@ import static com.ethercis.vehr.RestAPIBackgroundSteps.STATUS_CODE_OK;
 import static org.junit.Assert.*;
 
 public class AqlFeaturesSteps {
+    private static final String SELECT_COMPLETE_EVALUATION_AQL = "population_composition_evaluation.aql";
     private final String SELECT_COMPLETE_INSTRUCTION_AQL = "select_complete_instruction.aql";
     private final String ARCHETYPE_NODE_ID_AND_NAME_PATTERN = "\\[at\\d{4} *, *\\'[\\w\\s]*\\'\\]";
     private final String SELECT_COMPLETE_COMPOSITION_AQL = "select_complete_composition.aql";
     private final String SELECT_DATA_ITEM_NODE_ID_NAME_AQL = "select_data_item_node_id_and_name.aql";
     private final String EHR_COMPOSITION_INSTRUCTION_AQL = "ehr-composition-instruction.aql";
     private final String EHR_ID_PLACEHOLDER = "{{ehrId}}";
-    private final String COMPOSITION_ARCH_ID_PLACEHOLDER = "{{compositionArchetypeIdId}}";
-    private final String COMPOSITION_ARCH_ID = "openEHR-EHR-COMPOSITION.medication_list.v0";
-    private final String INSTRUCTION_ARCH_ID = "openEHR-EHR-INSTRUCTION.medication_order.v1";
+    private final String COMPOSITION_ARCH_ID_PLACEHOLDER = "{{compositionArchetypeId}}";
+    private final String EVALUATION_ARCH_ID_PLACEHOLDER = "{{evaluationArchetypeId}}";
+    private final String MEDICATION_LIST_ARCH_ID = "openEHR-EHR-COMPOSITION.medication_list.v0";
+    private final String MEDICATION_ORDER_ARCH_ID = "openEHR-EHR-INSTRUCTION.medication_order.v1";
     private final String COMPOSITION_NAME_PLACEHOLDER = "{{compositionName}}";
-    private final String COMPOSITION_NAME = "Medication statement list";
+    private final String COMPOSITION_NAME_MED_STATEMENT = "Medication statement list";
     private final String COMPOSITION_INSTRUCTION_ARCH_ID_PLACEHOLDER = "{{instructionArchetypeId}}";
     private final RestAPIBackgroundSteps bg;
     private final String CODE4HEALTH_QUERY_DIR = CODE4HEALTH_TEST_DATA_DIR + "/queries/";
@@ -46,6 +48,7 @@ public class AqlFeaturesSteps {
 
     private List<String> _code4HealthTemplateIds;
     private List<Map<String, String>> _aqlResultSet;
+    private String _instructionArchetypeNodeId;
 
     public AqlFeaturesSteps(RestAPIBackgroundSteps backgroundSteps) {
         bg = backgroundSteps;
@@ -72,16 +75,15 @@ public class AqlFeaturesSteps {
     }
 
     @And("^Composition archetype id criteria$")
-    public void compositionArchetypeIdCriteria() throws Throwable {
+    public void compositionArchetypeIdCriteria(String compositionArchetypeId) throws Throwable {
         _aqlQuery =
             _aqlQuery
-                .replace(COMPOSITION_ARCH_ID_PLACEHOLDER,
-                    COMPOSITION_ARCH_ID);
+                .replace(COMPOSITION_ARCH_ID_PLACEHOLDER, compositionArchetypeId);
     }
 
     @And("^Composition name criteria using WHERE clause$")
-    public void compositionNameCriteriaUsingWHEREClause() throws Throwable {
-        _aqlQuery = _aqlQuery.replace(COMPOSITION_NAME_PLACEHOLDER, COMPOSITION_NAME);
+    public void compositionNameCriteriaUsingWHEREClause(String compositionName) throws Throwable {
+        _aqlQuery = _aqlQuery.replace(COMPOSITION_NAME_PLACEHOLDER, compositionName);
     }
 
     @And("^Instruction archetype id criteria$")
@@ -89,7 +91,13 @@ public class AqlFeaturesSteps {
         _aqlQuery =
             _aqlQuery
                 .replace(COMPOSITION_INSTRUCTION_ARCH_ID_PLACEHOLDER,
-                    INSTRUCTION_ARCH_ID);
+                    MEDICATION_ORDER_ARCH_ID);
+    }
+
+    public void evaluationArchetypeIdCriteria(String archetypeId) throws Throwable {
+        _aqlQuery =
+            _aqlQuery
+                .replace(EVALUATION_ARCH_ID_PLACEHOLDER,archetypeId);
     }
 
     @Then("^The following data items should be available in query results:$")
@@ -149,12 +157,11 @@ public class AqlFeaturesSteps {
 
     @When("^An AQL query that selects composition uids and data items is created$")
     public void anAQLQueryThatSelectsCompositionUidsAndDataItemsIsCreated() throws Throwable {
-        String fullFilepath = bg.resourcesRootPath + CODE4HEALTH_QUERY_DIR + SELECT_DATA_ITEM_NODE_ID_NAME_AQL;
-        _aqlQuery = readFile(fullFilepath);
+        _aqlQuery = readAqlFile(SELECT_DATA_ITEM_NODE_ID_NAME_AQL);
         //set variables so that the query would work
         theQueryContainsEHRIdCriteria();
-        compositionArchetypeIdCriteria();
-        compositionNameCriteriaUsingWHEREClause();
+        compositionArchetypeIdCriteria(MEDICATION_LIST_ARCH_ID);
+        compositionNameCriteriaUsingWHEREClause(COMPOSITION_NAME_MED_STATEMENT);
         instructionArchetypeIdCriteria();
     }
 
@@ -176,8 +183,7 @@ public class AqlFeaturesSteps {
 
     @When("^A an AQL query that describes a composition under an EHR is created$")
     public void aAnAQLQueryThatDescribesAnCompositionUnderAnEHRIsCreated() throws Throwable {
-        String fullFilepath = bg.resourcesRootPath + CODE4HEALTH_QUERY_DIR + SELECT_COMPLETE_COMPOSITION_AQL;
-        _aqlQuery = readFile(fullFilepath);
+        _aqlQuery = readAqlFile(SELECT_COMPLETE_COMPOSITION_AQL);
     }
 
     @Then("^The results should be composition instances$")
@@ -186,10 +192,17 @@ public class AqlFeaturesSteps {
         assertTrue(_aqlResultSet.size() > 0);
 
         _aqlResultSet.forEach(
-            map -> assertArchetypeNodeId(map, "composition", COMPOSITION_ARCH_ID));
+            map -> assertArchetypeNodeId(map, "composition", MEDICATION_LIST_ARCH_ID));
     }
 
     private String readFile(String fullFilePath) throws FileNotFoundException {
+        return new Scanner(new FileInputStream(fullFilePath))
+            .useDelimiter("\\A")
+            .next();
+    }
+
+    private String readAqlFile(String aqlFileName) throws FileNotFoundException {
+        String fullFilePath = bg.resourcesRootPath + CODE4HEALTH_QUERY_DIR + aqlFileName;
         return new Scanner(new FileInputStream(fullFilePath))
             .useDelimiter("\\A")
             .next();
@@ -201,7 +214,7 @@ public class AqlFeaturesSteps {
         assertTrue(_aqlResultSet.size() > 0);
 
         _aqlResultSet.forEach(
-            map -> assertArchetypeNodeId(map, "instruction", INSTRUCTION_ARCH_ID));
+            map -> assertArchetypeNodeId(map, "instruction", MEDICATION_ORDER_ARCH_ID));
     }
 
     private void assertArchetypeNodeId(Map<String,String> map,
@@ -215,6 +228,37 @@ public class AqlFeaturesSteps {
 
     @When("^A an AQL query that describes an instruction under an EHR is created$")
     public void aAnAQLQueryThatDescribesAnInstructionUnderAnEHRIsCreated() throws Throwable {
-        _aqlQuery = readFile(bg.resourcesRootPath + CODE4HEALTH_QUERY_DIR + SELECT_COMPLETE_INSTRUCTION_AQL);
+        _aqlQuery = readAqlFile(SELECT_COMPLETE_INSTRUCTION_AQL);
+    }
+
+    @When("^A an AQL query that describes an evalution under an EHR is created$")
+    public void aAnAQLQueryThatDescribesAnEvalutionUnderAnEHRIsCreated() throws Throwable {
+        _aqlQuery = readAqlFile(SELECT_COMPLETE_EVALUATION_AQL);
+    }
+
+    @And("^The Composition archetype id is (openEHR-EHR-COMPOSITION\\.[\\w_]*\\.v\\d+)$")
+    public void theCompositionArchetypeIdIsOpenEHREHRCOMPOSITIONAdverse_reaction_listV(String archetypeId) throws Throwable {
+        compositionArchetypeIdCriteria(archetypeId);
+    }
+
+    @And("^Composition name criteria using WHERE clause is ([\\w\\s]*)$")
+    public void compositionNameCriteriaUsingWHEREClauseIsAdverseReactionList(String compositionName) throws Throwable {
+        compositionNameCriteriaUsingWHEREClause(compositionName);
+    }
+
+    @And("^Evaluation archetype id is (openEHR-EHR-EVALUATION\\.[\\w]*\\.v\\d+)$")
+    public void evaluationArchetypeIdIsOpenEHREHREVALUATIONAdverse_reaction_riskV(String evaluationId) throws Throwable {
+        _instructionArchetypeNodeId = evaluationId;
+        evaluationArchetypeIdCriteria(evaluationId);
+    }
+
+    @Then("^The results should be evaluation instances$")
+    public void theResultsShouldBeEvaluationInstances() throws Throwable {
+        _aqlResultSet = bg.extractAqlResults(bg.getAqlResponse(_aqlQuery));
+        assertTrue(_aqlResultSet.size() > 0);
+
+        _aqlResultSet.forEach(
+            map -> assertArchetypeNodeId(map, "evaluation", _instructionArchetypeNodeId)
+        );
     }
 }

@@ -2,6 +2,6 @@ SELECT
 	a as composition
  FROM
  	EHR e [ehr_id/value = '{{ehrId}}']
- 		CONTAINS COMPOSITION a[{{compositionArchetypeIdId}}]
+ 		CONTAINS COMPOSITION a[{{compositionArchetypeId}}]
 WHERE
 	a/name/value='{{compositionName}}'

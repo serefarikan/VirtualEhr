@@ -133,3 +133,15 @@ Feature: Support for openEHR Archetype Query Language
     And Composition name criteria using WHERE clause
     And Instruction archetype id criteria
     Then The results should be instruction instances
+
+  Scenario: Select evaluation
+  A composition with an evaluation is queried. The composition sits under the EHR.
+  AQL query specifies EHR id, Composition archetype node id and evaluation archetype node id.
+  The query uses WHERE clause to add Composition name as an extra criteria. The SELECT clause
+  selects the complete evaluation instance
+
+    When A an AQL query that describes an evalution under an EHR is created
+    And The Composition archetype id is openEHR-EHR-COMPOSITION.adverse_reaction_list.v1
+    And Composition name criteria using WHERE clause is Adverse reaction list
+    And Evaluation archetype id is openEHR-EHR-EVALUATION.adverse_reaction_risk.v1
+    Then The results should be evaluation instances

@@ -1,0 +1,9 @@
+select 
+ b_a as evaluation
+
+ from EHR e 
+ 	contains COMPOSITION a[{{compositionArchetypeId}}]
+ 	
+ 	contains EVALUATION b_a[{{evaluationArchetypeId}}]
+
+ 	where a/name/value='{{compositionName}}'
