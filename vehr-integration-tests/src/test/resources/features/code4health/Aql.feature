@@ -109,7 +109,7 @@ Feature: Support for openEHR Archetype Query Language
     And The data items are selected based on both archetype node id and name
     Then Data items with same node id should have different values if they have different names
 
-  Scenario: Select composition
+  Scenario Outline: Select composition
     A composition is queried. The composition sits under the EHR.
     AQL query specifies EHR id, Composition archetype node id and instruction archetype node id.
     The query uses WHERE clause to add Composition name as an extra criteria. The SELECT clause
@@ -117,11 +117,15 @@ Feature: Support for openEHR Archetype Query Language
 
     When A an AQL query that describes a composition under an EHR is created
     And The query contains EHR id criteria
-    And Composition archetype id criteria
-    And Composition name criteria using WHERE clause
+    And Composition archetype id is <composition_arch_id>
+    And Composition name criteria using WHERE clause is <composition_name>
     Then The results should be composition instances
 
-  Scenario: Select instruction
+    Examples:
+      |composition_arch_id|composition_name|
+      |openEHR-EHR-COMPOSITION.medication_list.v0|Medication statement list|
+
+  Scenario Outline: Select instruction
   A composition with an instruction is queried. The composition sits under the EHR.
   AQL query specifies EHR id, Composition archetype node id and instruction archetype node id.
   The query uses WHERE clause to add Composition name as an extra criteria. The SELECT clause
@@ -129,10 +133,14 @@ Feature: Support for openEHR Archetype Query Language
 
     When A an AQL query that describes an instruction under an EHR is created
     And The query contains EHR id criteria
-    And Composition archetype id criteria
-    And Composition name criteria using WHERE clause
-    And Instruction archetype id criteria
+    And Composition archetype id is <composition_arch_id>
+    And Composition name criteria using WHERE clause is <composition_name>
+    And Instruction archetype id is <instruction_arch_id>
     Then The results should be instruction instances
+
+    Examples:
+    |composition_arch_id|composition_name|instruction_arch_id|
+    |openEHR-EHR-COMPOSITION.medication_list.v0|Medication statement list|openEHR-EHR-INSTRUCTION.medication_order.v1|
 
   Scenario Outline: Select evaluation
   A composition with an evaluation is queried. The composition sits under the EHR.

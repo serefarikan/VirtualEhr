@@ -74,7 +74,7 @@ public class AqlFeaturesSteps {
         _aqlQuery = _aqlQuery.replace(EHR_ID_PLACEHOLDER, bg.ehrId.toString());
     }
 
-    @And("^Composition archetype id criteria$")
+    @And("^Composition archetype id is (openEHR-EHR-COMPOSITION\\.[\\w_]*\\.v\\d+)$")
     public void compositionArchetypeIdCriteria(String compositionArchetypeId) throws Throwable {
         _aqlQuery =
             _aqlQuery
@@ -86,12 +86,11 @@ public class AqlFeaturesSteps {
         _aqlQuery = _aqlQuery.replace(COMPOSITION_NAME_PLACEHOLDER, compositionName);
     }
 
-    @And("^Instruction archetype id criteria$")
-    public void instructionArchetypeIdCriteria() throws Throwable {
+    @And("^Instruction archetype id is (openEHR-EHR-INSTRUCTION\\.[\\w]*\\.v\\d+)$")
+    public void instructionArchetypeIdCriteria(String archetypeId) throws Throwable {
         _aqlQuery =
             _aqlQuery
-                .replace(COMPOSITION_INSTRUCTION_ARCH_ID_PLACEHOLDER,
-                    MEDICATION_ORDER_ARCH_ID);
+                .replace(COMPOSITION_INSTRUCTION_ARCH_ID_PLACEHOLDER, archetypeId);
     }
 
     public void evaluationArchetypeIdCriteria(String archetypeId) throws Throwable {
@@ -162,7 +161,7 @@ public class AqlFeaturesSteps {
         theQueryContainsEHRIdCriteria();
         compositionArchetypeIdCriteria(MEDICATION_LIST_ARCH_ID);
         compositionNameCriteriaUsingWHEREClause(COMPOSITION_NAME_MED_STATEMENT);
-        instructionArchetypeIdCriteria();
+        instructionArchetypeIdCriteria(MEDICATION_ORDER_ARCH_ID);
     }
 
     @And("^The data items are selected based on both archetype node id and name$")
