@@ -4,6 +4,7 @@ import com.jayway.restassured.path.json.JsonPath;
 import com.jayway.restassured.response.Response;
 import cucumber.api.DataTable;
 import cucumber.api.PendingException;
+import cucumber.api.java.After;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
@@ -54,6 +55,11 @@ public class AqlFeaturesSteps {
         bg = backgroundSteps;
     }
 
+    @After
+    public void cleanUp() throws Exception {
+        bg.launcher.stop();
+    }
+
     @When("^A an AQL query that describes an instruction under a composition is created$")
     public void aAnAQLQueryThatDescribesAnInstructionUnderACompositionIsCreated() throws Throwable {
         String queryFile =
@@ -86,7 +92,7 @@ public class AqlFeaturesSteps {
         _aqlQuery = _aqlQuery.replace(COMPOSITION_NAME_PLACEHOLDER, compositionName);
     }
 
-    @And("^Instruction archetype id is (openEHR-EHR-INSTRUCTION\\.[\\w]*\\.v\\d+)$")
+    @And("^Instruction archetype id is (openEHR-EHR-INSTRUCTION\\.[\\w-_]*\\.v\\d+)$")
     public void instructionArchetypeIdCriteria(String archetypeId) throws Throwable {
         _aqlQuery =
             _aqlQuery
