@@ -222,7 +222,7 @@ public class AqlFeaturesSteps {
         String instructionJson = map.get(nodeAliasInAqlSelectClause);
         JsonPath path = new JsonPath(instructionJson);
         String node_id = path.getString("archetype_node_id");
-        assertEquals(node_id, archetypeNodeId);
+        assertEquals(archetypeNodeId, node_id);
     }
 
     @When("^A an AQL query that describes an instruction under an EHR is created$")
