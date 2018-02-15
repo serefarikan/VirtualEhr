@@ -61,6 +61,7 @@ public class AqlFeaturesSteps {
     private List<Map<String, String>> _aqlResultSet;
     private String _instructionArchetypeNodeId;
     private String _observationArchetypeNodeId;
+    private String _evaluationArchetypeNodeId;
 
     public AqlFeaturesSteps(RestAPIBackgroundSteps backgroundSteps) {
         bg = backgroundSteps;
@@ -105,6 +106,7 @@ public class AqlFeaturesSteps {
 
     @And("^Instruction archetype id is (openEHR-EHR-INSTRUCTION\\.[\\w-_]*\\.v\\d+)$")
     public void instructionArchetypeIdCriteria(String archetypeId) throws Throwable {
+        _instructionArchetypeNodeId = archetypeId;
         _aqlQuery =
             _aqlQuery
                 .replace(COMPOSITION_INSTRUCTION_ARCH_ID_PLACEHOLDER, archetypeId);
@@ -236,7 +238,7 @@ public class AqlFeaturesSteps {
         assertTrue(_aqlResultSet.size() > 0);
 
         _aqlResultSet.forEach(
-            map -> assertArchetypeNodeId(map, "instruction", MEDICATION_ORDER_ARCH_ID));
+            map -> assertArchetypeNodeId(map, "instruction", _instructionArchetypeNodeId));
     }
 
     private void assertArchetypeNodeId(Map<String,String> map,
@@ -281,7 +283,7 @@ public class AqlFeaturesSteps {
 
     @And("^Evaluation archetype id is (openEHR-EHR-EVALUATION\\.[\\w]*\\.v\\d+)$")
     public void evaluationArchetypeIdIsOpenEHREHREVALUATIONAdverse_reaction_riskV(String evaluationId) throws Throwable {
-        _instructionArchetypeNodeId = evaluationId;
+        _evaluationArchetypeNodeId = evaluationId;
         evaluationArchetypeIdCriteria(evaluationId);
     }
 
@@ -291,7 +293,7 @@ public class AqlFeaturesSteps {
         assertTrue(_aqlResultSet.size() > 0);
 
         _aqlResultSet.forEach(
-            map -> assertArchetypeNodeId(map, "evaluation", _instructionArchetypeNodeId)
+            map -> assertArchetypeNodeId(map, "evaluation", _evaluationArchetypeNodeId)
         );
     }
 
