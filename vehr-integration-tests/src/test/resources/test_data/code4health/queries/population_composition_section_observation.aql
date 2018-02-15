@@ -1,0 +1,12 @@
+select
+ a/uid/value as comp_id,
+ a/name/value as comp_name,
+ b_a as observation
+
+ from EHR e 
+ 	contains COMPOSITION a
+
+ 	contains SECTION
+ 	
+ 	contains OBSERVATION b_a
+

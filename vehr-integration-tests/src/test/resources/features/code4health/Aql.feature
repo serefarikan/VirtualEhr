@@ -178,3 +178,35 @@ Feature: Support for openEHR Archetype Query Language
     Examples:
       | composition_arch_id                              | composition_name      | observation_arch_id                              |
       | openEHR-EHR-COMPOSITION.encounter.v1 | Vital Signs Observations | openEHR-EHR-OBSERVATION.respiration.v1 |
+
+  Scenario: Select instruction under section
+  A composition with a section is queried. The section contains an instruction.
+  The composition sits under the EHR.
+  The SELECT clause includes the complete instruction instance
+
+    When A an AQL query that describes an instruction under a section is created
+    Then The results should include instruction instances
+
+  Scenario: Select evaluation under section
+  A composition with a section is queried. The section contains an evaluation.
+  The composition sits under the EHR.
+  The SELECT clause includes the complete evaluation instance
+
+    When A an AQL query that describes an evalution under a section is created
+    Then The results should include evaluation instances
+
+  Scenario: Select observation under section
+  A composition with a section is queried. The section contains an observation.
+  The composition sits under the EHR.
+  The SELECT clause includes the complete observation instance
+
+    When A an AQL query that describes an observation under a section is created
+    Then The results should include observation instances
+
+  Scenario: Select action under section
+  A composition with a section is queried. The section contains an action.
+  The composition sits under the EHR.
+  The SELECT clause includes the complete action instance
+
+    When A an AQL query that describes an action under a section is created
+    Then The results should include action instances

@@ -31,6 +31,10 @@ public class AqlFeaturesSteps {
     private static final String SELECT_COMPLETE_EVALUATION_AQL = "population_composition_evaluation.aql";
     private static final String SELECT_COMPLETE_OBSERVATION_AQL = "select_complete_observation.aql";
     private static final String OBSERVATION_ARCH_ID_PLACEHOLDER = "{{observationArchetypeId}}";
+    private static final String POPULATION_COMPOSITION_SECTION_EVALUATION_AQL = "population_composition_section_evaluation.aql";
+    private static final String POPULATION_COMPOSITION_SECTION_INSTRUCTION_AQL = "population_composition_section_instruction.aql";
+    private static final String POPULATION_COMPOSITION_SECTION_OBSERVATION_AQL = "population_composition_section_observation.aql";
+    private static final String POPULATION_COMPOSITION_SECTION_ACTION_AQL = "population_composition_section_action.aql";
     private final String SELECT_COMPLETE_INSTRUCTION_AQL = "select_complete_instruction.aql";
     private final String ARCHETYPE_NODE_ID_AND_NAME_PATTERN = "\\[at\\d{4} *, *\\'[\\w\\s]*\\'\\]";
     private final String SELECT_COMPLETE_COMPOSITION_AQL = "select_complete_composition.aql";
@@ -41,6 +45,10 @@ public class AqlFeaturesSteps {
     private final String EVALUATION_ARCH_ID_PLACEHOLDER = "{{evaluationArchetypeId}}";
     private final String MEDICATION_LIST_ARCH_ID = "openEHR-EHR-COMPOSITION.medication_list.v0";
     private final String MEDICATION_ORDER_ARCH_ID = "openEHR-EHR-INSTRUCTION.medication_order.v1";
+    private final String INSTRUCTION_ARCHETYPE_ID_PREFIX = "openEHR-EHR-INSTRUCTION.";
+    private static final String OBSERVATION_ARCHETYPE_ID_PREFIX = "openEHR-EHR-OBSERVATION.";
+    private static final String ACTION_ARCHETYPE_ID_PREFIX = "openEHR-EHR-ACTION.";
+    private final String EVALUATION_ARCHETYPE_ID_PREFIX = "openEHR-EHR-EVALUATION.";
     private final String COMPOSITION_NAME_PLACEHOLDER = "{{compositionName}}";
     private final String COMPOSITION_NAME_MED_STATEMENT = "Medication statement list";
     private final String COMPOSITION_INSTRUCTION_ARCH_ID_PLACEHOLDER = "{{instructionArchetypeId}}";
@@ -234,10 +242,21 @@ public class AqlFeaturesSteps {
     private void assertArchetypeNodeId(Map<String,String> map,
                                        String nodeAliasInAqlSelectClause,
                                        String archetypeNodeId){
+        String node_id = extractArchetypeNodeId(map, nodeAliasInAqlSelectClause);
+        assertEquals(archetypeNodeId, node_id);
+    }
+
+    private String extractArchetypeNodeId(Map<String, String> map, String nodeAliasInAqlSelectClause) {
         String dataAsJson = map.get(nodeAliasInAqlSelectClause);
         JsonPath path = new JsonPath(dataAsJson);
-        String node_id = path.getString("archetype_node_id");
-        assertEquals(archetypeNodeId, node_id);
+        return path.getString("archetype_node_id");
+    }
+
+    private void assertArchetypeNodeIdPrefix(Map<String,String> map,
+                                       String nodeAliasInAqlSelectClause,
+                                       String archetypeNodeIdPrefix){
+        String node_id = extractArchetypeNodeId(map, nodeAliasInAqlSelectClause);
+        assertTrue(node_id.startsWith(archetypeNodeIdPrefix));
     }
 
     @When("^A an AQL query that describes an instruction under an EHR is created$")
@@ -276,6 +295,15 @@ public class AqlFeaturesSteps {
         );
     }
 
+    @Then("^The results should include evaluation instances$")
+    public void theResultsShouldIncludeEvaluationInstances() throws Throwable {
+        _aqlResultSet = bg.extractAqlResults(bg.getAqlResponse(_aqlQuery));
+        assertTrue(_aqlResultSet.size() > 0);
+
+        _aqlResultSet.forEach(
+            map -> assertArchetypeNodeIdPrefix(map, "evaluation", EVALUATION_ARCHETYPE_ID_PREFIX));
+    }
+
     @When("^A an AQL query that describes an observation under an EHR is created$")
     public void aAnAQLQueryThatDescribesAnObservationUnderAnEHRIsCreated() throws Throwable {
         _aqlQuery = readAqlFile(SELECT_COMPLETE_OBSERVATION_AQL);
@@ -295,5 +323,52 @@ public class AqlFeaturesSteps {
         _aqlResultSet.forEach(
                 map -> assertArchetypeNodeId(map, "observation", _observationArchetypeNodeId)
         );
+    }
+
+    @When("^A an AQL query that describes an evalution under a section is created$")
+    public void aAnAQLQueryThatDescribesAnEvalutionUnderASectionIsCreated() throws Throwable {
+        _aqlQuery = readAqlFile(POPULATION_COMPOSITION_SECTION_EVALUATION_AQL);
+    }
+
+    @When("^A an AQL query that describes an instruction under a section is created$")
+    public void aAnAQLQueryThatDescribesAnInstructionUnderASectionIsCreated() throws Throwable {
+        _aqlQuery = readAqlFile(POPULATION_COMPOSITION_SECTION_INSTRUCTION_AQL);
+    }
+
+    @Then("^The results should include instruction instances$")
+    public void theResultsShouldIncludeInstructionInstances() throws Throwable {
+        _aqlResultSet = bg.extractAqlResults(bg.getAqlResponse(_aqlQuery));
+        assertTrue(_aqlResultSet.size() > 0);
+
+        _aqlResultSet.forEach(
+            map -> assertArchetypeNodeIdPrefix(map, "instruction", INSTRUCTION_ARCHETYPE_ID_PREFIX));
+    }
+
+    @When("^A an AQL query that describes an observation under a section is created$")
+    public void aAnAQLQueryThatDescribesAnObservationUnderASectionIsCreated() throws Throwable {
+        _aqlQuery = readAqlFile(POPULATION_COMPOSITION_SECTION_OBSERVATION_AQL);
+    }
+
+    @Then("^The results should include observation instances$")
+    public void theResultsShouldIncludeObservationInstances() throws Throwable {
+        _aqlResultSet = bg.extractAqlResults(bg.getAqlResponse(_aqlQuery));
+        assertTrue(_aqlResultSet.size() > 0);
+
+        _aqlResultSet.forEach(
+            map -> assertArchetypeNodeIdPrefix(map, "observation", OBSERVATION_ARCHETYPE_ID_PREFIX));
+    }
+
+    @When("^A an AQL query that describes an action under a section is created$")
+    public void aAnAQLQueryThatDescribesAnActionUnderASectionIsCreated() throws Throwable {
+        _aqlQuery = readAqlFile(POPULATION_COMPOSITION_SECTION_ACTION_AQL);
+    }
+
+    @Then("^The results should include action instances$")
+    public void theResultsShouldIncludeActionInstances() throws Throwable {
+        _aqlResultSet = bg.extractAqlResults(bg.getAqlResponse(_aqlQuery));
+        assertTrue(_aqlResultSet.size() > 0);
+
+        _aqlResultSet.forEach(
+            map -> assertArchetypeNodeIdPrefix(map, "action", ACTION_ARCHETYPE_ID_PREFIX));
     }
 }
