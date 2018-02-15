@@ -1,0 +1,10 @@
+SELECT
+	b_a as observation
+ FROM
+ 	EHR e [ehr_id/value = '{{ehrId}}']
+
+ 		CONTAINS COMPOSITION a[{{compositionArchetypeId}}]
+
+ 			CONTAINS OBSERVATION b_a[{{observationArchetypeId}}]
+WHERE
+	a/name/value='{{compositionName}}'

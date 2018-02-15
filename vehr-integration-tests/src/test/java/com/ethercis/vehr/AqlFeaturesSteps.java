@@ -29,6 +29,8 @@ import static org.junit.Assert.*;
 
 public class AqlFeaturesSteps {
     private static final String SELECT_COMPLETE_EVALUATION_AQL = "population_composition_evaluation.aql";
+    private static final String SELECT_COMPLETE_OBSERVATION_AQL = "select_complete_observation.aql";
+    private static final String OBSERVATION_ARCH_ID_PLACEHOLDER = "{{observationArchetypeId}}";
     private final String SELECT_COMPLETE_INSTRUCTION_AQL = "select_complete_instruction.aql";
     private final String ARCHETYPE_NODE_ID_AND_NAME_PATTERN = "\\[at\\d{4} *, *\\'[\\w\\s]*\\'\\]";
     private final String SELECT_COMPLETE_COMPOSITION_AQL = "select_complete_composition.aql";
@@ -50,6 +52,7 @@ public class AqlFeaturesSteps {
     private List<String> _code4HealthTemplateIds;
     private List<Map<String, String>> _aqlResultSet;
     private String _instructionArchetypeNodeId;
+    private String _observationArchetypeNodeId;
 
     public AqlFeaturesSteps(RestAPIBackgroundSteps backgroundSteps) {
         bg = backgroundSteps;
@@ -103,6 +106,12 @@ public class AqlFeaturesSteps {
         _aqlQuery =
             _aqlQuery
                 .replace(EVALUATION_ARCH_ID_PLACEHOLDER,archetypeId);
+    }
+
+    public void observationArchetypeIdCriteria(String archetypeId){
+        _aqlQuery =
+            _aqlQuery
+                .replace(OBSERVATION_ARCH_ID_PLACEHOLDER, archetypeId);
     }
 
     @Then("^The following data items should be available in query results:$")
@@ -225,8 +234,8 @@ public class AqlFeaturesSteps {
     private void assertArchetypeNodeId(Map<String,String> map,
                                        String nodeAliasInAqlSelectClause,
                                        String archetypeNodeId){
-        String instructionJson = map.get(nodeAliasInAqlSelectClause);
-        JsonPath path = new JsonPath(instructionJson);
+        String dataAsJson = map.get(nodeAliasInAqlSelectClause);
+        JsonPath path = new JsonPath(dataAsJson);
         String node_id = path.getString("archetype_node_id");
         assertEquals(archetypeNodeId, node_id);
     }
@@ -246,7 +255,7 @@ public class AqlFeaturesSteps {
         compositionArchetypeIdCriteria(archetypeId);
     }
 
-    @And("^Composition name criteria using WHERE clause is ([\\w\\s]*)$")
+    @And("^Composition name criteria using WHERE clause is ([\\w\\s\\(\\)]*)$")
     public void compositionNameCriteriaUsingWHEREClauseIsAdverseReactionList(String compositionName) throws Throwable {
         compositionNameCriteriaUsingWHEREClause(compositionName);
     }
@@ -264,6 +273,27 @@ public class AqlFeaturesSteps {
 
         _aqlResultSet.forEach(
             map -> assertArchetypeNodeId(map, "evaluation", _instructionArchetypeNodeId)
+        );
+    }
+
+    @When("^A an AQL query that describes an observation under an EHR is created$")
+    public void aAnAQLQueryThatDescribesAnObservationUnderAnEHRIsCreated() throws Throwable {
+        _aqlQuery = readAqlFile(SELECT_COMPLETE_OBSERVATION_AQL);
+    }
+
+    @And("^Observation archetype id is (openEHR-EHR-OBSERVATION.[\\w_-]*.v\\d*)$")
+    public void observationArchetypeIdIsObservation_arch_id(String archetypeId) throws Throwable {
+        _observationArchetypeNodeId = archetypeId;
+        observationArchetypeIdCriteria(archetypeId);
+    }
+
+    @Then("^The results should be observation instances$")
+    public void theResultsShouldBeObservationInstances() throws Throwable {
+        _aqlResultSet = bg.extractAqlResults(bg.getAqlResponse(_aqlQuery));
+        assertTrue(_aqlResultSet.size() > 0);
+
+        _aqlResultSet.forEach(
+                map -> assertArchetypeNodeId(map, "observation", _observationArchetypeNodeId)
         );
     }
 }

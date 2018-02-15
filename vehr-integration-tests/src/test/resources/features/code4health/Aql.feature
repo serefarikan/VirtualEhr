@@ -161,3 +161,20 @@ Feature: Support for openEHR Archetype Query Language
     Examples:
       | composition_arch_id                              | composition_name      | evaluation_arch_id                              |
       | openEHR-EHR-COMPOSITION.adverse_reaction_list.v1 | Adverse reaction list | openEHR-EHR-EVALUATION.adverse_reaction_risk.v1 |
+
+  Scenario Outline: Select observation
+  A composition with an observation is queried. The composition sits under the EHR.
+  AQL query specifies EHR id, Composition archetype node id and observation archetype node id.
+  The query uses WHERE clause to add Composition name as an extra criteria. The SELECT clause
+  selects the complete observation instance
+
+    When A an AQL query that describes an observation under an EHR is created
+    And The query contains EHR id criteria
+    And The Composition archetype id is <composition_arch_id>
+    And Composition name criteria using WHERE clause is <composition_name>
+    And Observation archetype id is <observation_arch_id>
+    Then The results should be observation instances
+
+    Examples:
+      | composition_arch_id                              | composition_name      | observation_arch_id                              |
+      | openEHR-EHR-COMPOSITION.encounter.v1 | Vital Signs Observations | openEHR-EHR-OBSERVATION.respiration.v1 |
