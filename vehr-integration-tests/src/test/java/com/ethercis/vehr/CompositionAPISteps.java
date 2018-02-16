@@ -27,21 +27,28 @@ public class CompositionAPISteps {
     private static final String FORMAT_RAW = "RAW";
     private static final String FORMAT_XML = "XML";
     private final RestAPIBackgroundSteps bg;
-    private String body;
-    private String compositionUid;
+    private String _compositionUid;
 
     public CompositionAPISteps(RestAPIBackgroundSteps pBackgroundSteps){
         bg = pBackgroundSteps;
     }
 
+    public void setCompositionUid(String value) {
+        _compositionUid = value;
+    }
+
+    public String getCompositionUid() {
+        return _compositionUid;
+    }
+
     @When("^Flat json file ([a-zA-Z \\-\\.0-9]+\\.json) with template id ([a-zA-Z \\-\\.0-9]+) is committed to service$")
     public void flatJsonFileIsCommittedToService(String pCompositionFileName, String pTemplateId) throws Exception {
-        compositionUid =
+        _compositionUid =
             bg.postFlatJsonComposition(
                 bg.resourcesRootPath + TEST_DATA_DIR + "/" + pCompositionFileName,
                 pTemplateId);
-        assertNotNull(compositionUid);
-        bg.assertUidFormat(compositionUid);
+        assertNotNull(_compositionUid);
+        bg.assertUidFormat(_compositionUid);
     }
 
     @After
@@ -51,12 +58,12 @@ public class CompositionAPISteps {
 
     @Then("^A composition id should be returned by the API$")
     public void aCompositionIdShouldBeReturnedByTheAPI() throws Throwable {
-        assertTrue(compositionUid.split("::").length == 3);
+        assertTrue(_compositionUid.split("::").length == 3);
     }
 
     @And("^Composition id should allow retrieval of composition in raw format$")
     public void compositionIdShouldAllowRetrievalOfCompositionInRawFormat() throws Throwable {
-        String objectId = compositionUid.substring(0, compositionUid.indexOf("::"));
+        String objectId = _compositionUid.substring(0, _compositionUid.indexOf("::"));
 
         Response response = getComposition(objectId, bg.CONTENT_TYPE_JSON, FORMAT_RAW);
 
@@ -81,7 +88,7 @@ public class CompositionAPISteps {
 
     @And("^Composition id should allow retrieval of composition in xml format$")
     public void compositionIdShouldAllowRetrievalOfCompositionInXmlFormat() throws Throwable {
-        String objectId = compositionUid.substring(0, compositionUid.indexOf("::"));
+        String objectId = _compositionUid.substring(0, _compositionUid.indexOf("::"));
 
         Response response = getComposition(objectId, bg.CONTENT_TYPE_XML, FORMAT_XML);
 
