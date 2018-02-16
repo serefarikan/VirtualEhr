@@ -68,6 +68,7 @@ Feature: Support for openEHR Archetype Query Language
       | Composition_IDCR_Vital_Signs_Encounter.v1.0.json           | IDCR - Vital Signs Encounter.v1           |
       | Composition_IDCR_Vital_Signs_Encounter.v1.1.json           | IDCR - Vital Signs Encounter.v1           |
       | Composition_IDCR_Vital_Signs_Encounter.v1.2.json           | IDCR - Vital Signs Encounter.v1           |
+      | Composition_IDCR_Vital_Signs_Encounter.v1.3.json           | IDCR - Vital Signs Encounter.v1           |
       | Composition_RIPPLE_Clinical_Notes.v1.0.json                | RIPPLE - Clinical Notes.v1                |
       | Composition_RIPPLE_Clinical_Notes.v1.1.json                | RIPPLE - Clinical Notes.v1                |
       | Composition_RIPPLE_Clinical_Notes.v1.2.json                | RIPPLE - Clinical Notes.v1                |
@@ -210,3 +211,26 @@ Feature: Support for openEHR Archetype Query Language
 
     When A an AQL query that describes an action under a section is created
     Then The results should include action instances
+
+  Scenario: Query without archetype id or name constraints
+    A composition with a section and and entry subtype under the section is queried.
+    The EHR is also included in the query.
+    The query does not use any EHR ids, archetype ids or archetype names. Therefore it is
+    a purely structural population query. The query returns instances of entry subtype.
+
+    When An aql query that describes an EHR/COMPOSITION/SECTION/ENTRY structure is created
+    Then The results should include ENTRY instances
+
+  Scenario: Query after data volume increases
+    A composition with a section and and entry subtype under the section is queried.
+    The EHR is also included in the query.
+    The query does not use any EHR ids, archetype ids or archetype names. Therefore it is
+    a purely structural population query. The query returns instances of entry subtype.
+    After the query returns, more data is inserted and the query is repeated. The
+    query returns a larger result set.
+
+    When An aql query that describes an EHR/COMPOSITION/SECTION/ENTRY structure is created
+    And The results include ENTRY instances
+    And More data is inserted
+    And The AQL query is repeated
+    Then A larger result set should be returned

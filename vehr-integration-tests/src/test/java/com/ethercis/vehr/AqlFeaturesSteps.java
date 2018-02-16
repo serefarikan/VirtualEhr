@@ -35,6 +35,7 @@ public class AqlFeaturesSteps {
     private static final String POPULATION_COMPOSITION_SECTION_INSTRUCTION_AQL = "population_composition_section_instruction.aql";
     private static final String POPULATION_COMPOSITION_SECTION_OBSERVATION_AQL = "population_composition_section_observation.aql";
     private static final String POPULATION_COMPOSITION_SECTION_ACTION_AQL = "population_composition_section_action.aql";
+    private static final String POPULATION_COMPOSITION_SECTION_ENTRY_AQL = "population_composition_section_entry.aql";
     private final String SELECT_COMPLETE_INSTRUCTION_AQL = "select_complete_instruction.aql";
     private final String ARCHETYPE_NODE_ID_AND_NAME_PATTERN = "\\[at\\d{4} *, *\\'[\\w\\s]*\\'\\]";
     private final String SELECT_COMPLETE_COMPOSITION_AQL = "select_complete_composition.aql";
@@ -59,6 +60,7 @@ public class AqlFeaturesSteps {
 
     private List<String> _code4HealthTemplateIds;
     private List<Map<String, String>> _aqlResultSet;
+    private List<Map<String, String>> _previousAqlResultSet;
     private String _instructionArchetypeNodeId;
     private String _observationArchetypeNodeId;
     private String _evaluationArchetypeNodeId;
@@ -372,5 +374,37 @@ public class AqlFeaturesSteps {
 
         _aqlResultSet.forEach(
             map -> assertArchetypeNodeIdPrefix(map, "action", ACTION_ARCHETYPE_ID_PREFIX));
+    }
+
+    @When("^An aql query that describes an EHR/COMPOSITION/SECTION/ENTRY structure is created$")
+    public void anAqlQueryThatDescribesAnEHRCOMPOSITIONSECTIONENTRYStructureIsCreated() throws Throwable {
+        _aqlQuery = readAqlFile(POPULATION_COMPOSITION_SECTION_ENTRY_AQL);
+    }
+
+    @Then("^The results should include ENTRY instances$")
+    public void theResultsShouldIncludeENTRYInstances() throws Throwable {
+        _aqlResultSet = bg.extractAqlResults(bg.getAqlResponse(_aqlQuery));
+        assertTrue(_aqlResultSet.size() > 0);
+    }
+
+    @And("^The results include ENTRY instances$")
+    public void theResultsIncludeENTRYInstances() throws Throwable {
+        theResultsShouldIncludeENTRYInstances();
+    }
+
+    @And("^More data is inserted$")
+    public void moreDataIsInserted() throws Throwable {
+        bg.reInsertTestCompositions();
+    }
+
+    @And("^The AQL query is repeated$")
+    public void theAQLQueryIsRepeated() throws Throwable {
+        _previousAqlResultSet = _aqlResultSet;
+        _aqlResultSet = bg.extractAqlResults(bg.getAqlResponse(_aqlQuery));
+    }
+
+    @Then("^A larger result set should be returned$")
+    public void aLargerResultSetShouldBeReturned() throws Throwable {
+        assertTrue(_aqlResultSet.size() > _previousAqlResultSet.size());
     }
 }

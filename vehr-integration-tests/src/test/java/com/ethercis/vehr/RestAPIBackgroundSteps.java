@@ -18,8 +18,10 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 import static com.jayway.restassured.RestAssured.given;
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -50,6 +52,8 @@ public class RestAPIBackgroundSteps {
     public static final String COMPOSITION_ENDPOINT = "/rest/v1/composition";
     private Pattern uidPattern;
     private Map<String, List<String>> persistedCompositions = new HashMap<>();
+    private List<AbstractMap.SimpleEntry<String, String>> _persistedCompositionsAsXml;
+    private DataTable _testCompositions;
 
     public RestAPIBackgroundSteps(){
         RestAssured.baseURI = "http://localhost";
@@ -61,6 +65,14 @@ public class RestAPIBackgroundSteps {
                 .SECRET_SESSION_ID(I_ServiceRunMode.DialectSpace.EHRSCAPE);
 
         uidPattern = Pattern.compile("[a-z0-9-]*::[a-z0-9.]*::[0-9]*");
+    }
+
+    public void reInsertTestCompositions()  {
+        try {
+            theFollowingCompositionsExistsUnderTheEHR(_testCompositions);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Given("^The server is running$")
@@ -145,7 +157,8 @@ public class RestAPIBackgroundSteps {
     }
 
     @And("^The following compositions exists under the EHR:$")
-    public void theFollowingCompositionsExistsUnderTheEHR(DataTable pCompositionFileNames) throws Throwable {
+    public void theFollowingCompositionsExistsUnderTheEHR(DataTable pCompositionFileNames) throws Exception {
+
         List<DataTableRow> gherkinRows = pCompositionFileNames.getGherkinRows();
         for (DataTableRow fnameTempId : gherkinRows) {
 
@@ -159,6 +172,18 @@ public class RestAPIBackgroundSteps {
             persistedCompositions
                 .computeIfAbsent(templateId, x -> new ArrayList<>())//x is ignored
                 .add(compositionUid);
+        }
+
+        _testCompositions = pCompositionFileNames;
+    }
+
+    private  String getCompositionAsXML(String uid) {
+        try {
+            CompositionAPISteps compositionAPISteps = new CompositionAPISteps(this);
+            compositionAPISteps.setCompositionUid(uid);
+            return compositionAPISteps.getXmlStringFromRestAPI();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
         }
     }
 

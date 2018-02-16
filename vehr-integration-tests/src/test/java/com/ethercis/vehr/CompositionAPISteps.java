@@ -7,13 +7,16 @@ import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 import static com.ethercis.vehr.RestAPIBackgroundSteps.COMPOSITION_ENDPOINT;
 import static com.ethercis.vehr.RestAPIBackgroundSteps.STATUS_CODE_OK;
@@ -87,19 +90,8 @@ public class CompositionAPISteps {
     }
 
     @And("^Composition id should allow retrieval of composition in xml format$")
-    public void compositionIdShouldAllowRetrievalOfCompositionInXmlFormat() throws Throwable {
-        String objectId = _compositionUid.substring(0, _compositionUid.indexOf("::"));
-
-        Response response = getComposition(objectId, bg.CONTENT_TYPE_XML, FORMAT_XML);
-
-        String composition = response.body().asString();
-        assertNotNull(composition);
-
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder documentBuilder = factory.newDocumentBuilder();
-        Document xmlComposition =
-            documentBuilder
-                .parse(new ByteArrayInputStream(composition.getBytes()));
+    public void compositionIdShouldAllowRetrievalOfCompositionInXmlFormat() throws Exception {
+        Document xmlComposition = getXmlCompositionFromRestApi();
 
         XPathFactory xPathFactory = XPathFactory.newInstance();
         XPath xPath = xPathFactory.newXPath();
@@ -107,5 +99,23 @@ public class CompositionAPISteps {
         assertNotNull(rootNode);
         assertTrue(rootNode.getNodeName().equals("composition"));
 
+    }
+
+    public Document getXmlCompositionFromRestApi() throws ParserConfigurationException, SAXException, IOException {
+        String composition = getXmlStringFromRestAPI();
+        assertNotNull(composition);
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder documentBuilder = factory.newDocumentBuilder();
+        return documentBuilder
+            .parse(new ByteArrayInputStream(composition.getBytes()));
+    }
+
+    public String getXmlStringFromRestAPI() {
+        String objectId = _compositionUid.substring(0, _compositionUid.indexOf("::"));
+
+        Response response = getComposition(objectId, bg.CONTENT_TYPE_XML, FORMAT_XML);
+
+        return response.body().asString();
     }
 }
