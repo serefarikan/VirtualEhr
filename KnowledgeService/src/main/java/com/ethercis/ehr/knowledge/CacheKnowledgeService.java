@@ -53,6 +53,7 @@ import org.openehr.rm.datastructure.itemstructure.ItemStructure;
 import org.openehr.rm.support.identification.ObjectVersionID;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -270,7 +271,8 @@ public class CacheKnowledgeService extends ClusterInfo implements I_CacheKnowled
 
         String templateId;
         try {
-            templateId = this.getKnowledgeCache().addOperationalTemplate(content.getBytes());
+            byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
+            templateId = this.getKnowledgeCache().addOperationalTemplate(bytes);
         } catch (Exception e){
             throw new ServiceManagerException(global, SysErrorCode.USER_ILLEGALARGUMENT, ME, "Could not add template, reason:" + e);
         }

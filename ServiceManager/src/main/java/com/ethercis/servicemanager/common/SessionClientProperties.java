@@ -57,7 +57,7 @@ public class SessionClientProperties implements I_SessionClientProperties {
      */
     public final void addClientProperty(String key, String type, Object value) {
 	String encoding = null;
-	String str = (value == null) ? null : value.toString();
+	String str = (value == null) ? null : (type.equals("String")? ((String)value) : value.toString());
 	ClientProperty clientProperty = new ClientProperty(key, type, encoding,
 		str);
 	this.clientProperties.put(clientProperty.getName(), clientProperty);

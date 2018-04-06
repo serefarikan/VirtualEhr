@@ -36,6 +36,7 @@ package com.ethercis.servicemanager.common;
 import com.ethercis.servicemanager.common.def.Constants;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * This class encapsulates one client property. 
@@ -304,7 +305,7 @@ public class EncodableData implements java.io.Serializable, Cloneable
       }
       if (Constants.ENCODING_BASE64.equalsIgnoreCase(this.encoding)) {
          this.encoding = Constants.ENCODING_BASE64; // correct case sensitive
-         this.value = Base64.encode(value.getBytes());
+         this.value = Base64.encode(value.getBytes(StandardCharsets.UTF_8));
       }
       else {
          this.value = value;

@@ -51,6 +51,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -487,7 +488,7 @@ public class VEhrGateServlet extends HttpServlet implements
 		try {
 			InputStream inputStream = req.getInputStream();
 			if (inputStream != null) {
-				reader = new BufferedReader(new InputStreamReader(inputStream));
+				reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 				char[] charBuffer = new char[128];
 				int bytesRead = -1;
 				while ((bytesRead = reader.read(charBuffer)) > 0) {

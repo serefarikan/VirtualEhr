@@ -9,9 +9,11 @@ import cucumber.api.DataTable;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import gherkin.formatter.model.DataTableRow;
+import org.apache.xmlbeans.XmlException;
 import org.junit.Assert;
+import org.openehr.schemas.v1.TemplateDocument;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -83,12 +85,10 @@ public class RestAPIBackgroundSteps {
 
     private void startLauncher() throws Exception {
         resourcesRootPath =
-            getClass()
-                .getClassLoader()
-                .getResource(".")
-                .toURI()//to deal with space in directory name
-                .toURL()
-                .getFile();
+                Paths.get(getClass()
+                        .getClassLoader()
+                        .getResource(".")
+                        .toURI()).toString() + "/";
 
         launcher = new Launcher();
         launcher.start(new String[]{
@@ -126,11 +126,17 @@ public class RestAPIBackgroundSteps {
         try {
             String optPath = resourcesRootPath + operationalTemplatesDir + "/" + optFileName;
             byte[] content = Files.readAllBytes(Paths.get(optPath));
+            byte[] utfBytes = new String(content, "UTF-8").getBytes("UTF-8");
+            try {
+                TemplateDocument.Factory.parse(new ByteArrayInputStream(content));
+            } catch (XmlException e) {
+                e.printStackTrace();
+            }
 
             Response response =
                 given()
                     .header(secretSessionId, SESSION_ID_TEST_SESSION)
-                    .content(content)
+                    .content(utfBytes)
                     .when()
                     .post("/rest/v1/template");
 
